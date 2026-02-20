@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ticket System Full</title>
+<style>
+body{font-family:Arial,sans-serif;margin:0;padding:0;min-height:100vh;display:flex;justify-content:center;align-items:center;background-size:cover;background-position:center;transition:background 1s ease-in-out;}
+.container{width:350px;background:rgba(255,255,255,0.85);padding:25px;border-radius:12px;box-shadow:0 0 25px rgba(0,0,0,0.4);display:none;}
+h2{text-align:center;color:#333;}
+input,button{width:100%;padding:10px;margin:8px 0;border-radius:6px;border:1px solid #ccc;font-size:15px;}
+button{background:#2575fc;color:white;border:none;cursor:pointer;}
+button:hover{background:#1a5ed8;}
+.link{text-align:center;margin-top:10px;color:blue;cursor:pointer;}
+.details{background:#f2f2f2;padding:10px;border-radius:6px;margin-top:10px;}
+.logout{background:crimson;margin-top:10px;}
+</style>
+</head>
+<body>
+
+<!-- Registration -->
+<div class="container" id="registerBox">
+<h2>Register</h2>
+<input type="text" id="rname" placeholder="Full Name">
+<input type="email" id="remail" placeholder="Email">
+<input type="password" id="rpass" placeholder="Password">
+<button onclick="register()">Register</button>
+<div class="link" onclick="showLogin()">Already have account? Login</div>
+</div>
+
+<!-- OTP Verification -->
+<div class="container" id="otpBox">
+<h2>OTP Verification</h2>
+<p>Enter the OTP sent to your email:</p>
+<input type="text" id="otpInput" placeholder="Enter OTP">
+<button onclick="verifyOTP()">Verify OTP</button>
+</div>
+
+<!-- Login -->
+<div class="container" id="loginBox">
+<h2>Login</h2>
+<input type="email" id="lemail" placeholder="Email">
+<input type="password" id="lpass" placeholder="Password">
+<button onclick="login()">Login</button>
+<div class="link" onclick="showRegister()">Create new account</div>
+</div>
+
+<!-- Dashboard -->
+<div class="container" id="dashboard">
+<h2>Dashboard</h2>
+<input type="text" id="ticketNo" placeholder="Enter Ticket Number">
+<input type="text" id="ticketName" placeholder="Passenger Name">
+<input type="text" id="ticketFrom" placeholder="From">
+<input type="text" id="ticketTo" placeholder="To">
+<input type="date" id="ticketDate">
+<button onclick="saveTicket()">Save Ticket</button>
+<button onclick="searchTicket()">Search Ticket</button>
+<button onclick="downloadData()">Download Data</button>
+<div class="details" id="result"></div>
+<button class="logout" onclick="logout()">Logout</button>
+</div>
+
+<script>
+// Lake slideshow
+let backgrounds = [
+    'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1950&q=80',
+    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1950&q=80',
+    'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1950&q=80'
+];
+let index = 0;
+function changeBackground(){document.body.style.background=`url('${backgrounds[index]}') no-repeat center center fixed`; document.body.style.backgroundSize='cover'; index=(index+1)%backgrounds.length;}
+changeBackground(); setInterval(changeBackground,8000);
+
+// Show Pages
+showRegister();
+function showRegister(){hideAll(); document.getElementById("registerBox").style.display="block";}
+function showLogin(){hideAll(); document.getElementById("loginBox").style.display="block";}
+function showOTP(){hideAll(); document.getElementById("otpBox").style.display="block";}
+function showDashboard(){hideAll(); document.getElementById("dashboard").style.display="block";}
+function hideAll(){document.querySelectorAll('.container').forEach(div=>div.style.display='none');}
+
+// Registration + OTP
+let currentOTP = "";
+let tempUser = {};
+function register(){
+    let name=rname.value,email=remail.value,pass=rpass.value;
+    if(!name||!email||!pass){alert("Fill all fields"); return;}
+    tempUser={name,email,pass};
+    currentOTP=Math.floor(100000+Math.random()*900000).toString();
+    alert("Your OTP is: "+currentOTP);
+    showOTP();
+}
+function verifyOTP(){
+    let otp=otpInput.value;
+    if(otp===currentOTP){
+        let users=JSON.parse(localStorage.getItem("users"))||[];
+        users.push(tempUser); localStorage.setItem("users",JSON.stringify(users));
+        alert("Registration successful!");
+        tempUser={}; currentOTP=""; showLogin();
+    } else {alert("Invalid OTP!");}
+}
+
+// Login
+function login(){
+    let email=lemail.value,pass=lpass.value;
+    let users=JSON.parse(localStorage.getItem("users"))||[];
+    let user=users.find(u=>u.email===email&&u.pass===pass);
+    if(user){localStorage.setItem("loginUser", email); showDashboard();}
+    else {alert("Invalid Login");}
+}
+
+// Dashboard functions
+function saveTicket(){
+    let no=ticketNo.value,name=ticketName.value,from=ticketFrom.value,to=ticketTo.value,date=ticketDate.value;
+    if(!no||!name||!from||!to||!date){alert("Fill all ticket details"); return;}
+    let tickets=JSON.parse(localStorage.getItem("tickets"))||[];
+    tickets.push({no,name,from,to,date}); localStorage.setItem("tickets",JSON.stringify(tickets));
+    alert("Ticket Saved");
+}
+function searchTicket(){
+    let no=ticketNo.value, tickets=JSON.parse(localStorage.getItem("tickets"))||[], t=tickets.find(t=>t.no===no);
+    if(t){result.innerHTML=`<b>Ticket Found</b><br>Name: ${t.name}<br>From: ${t.from}<br>To: ${t.to}<br>Date: ${t.date}`;}
+    else{result.innerHTML="Ticket Not Found";}
+}
+function downloadData(){
+    let data={users: JSON.parse(localStorage.getItem("users"))||[], tickets: JSON.parse(localStorage.getItem("tickets"))||[]};
+    let file=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+    let a=document.createElement("a"); a.href=URL.createObjectURL(file); a.download="ticket_data.json"; a.click();
+}
+function logout(){localStorage.removeItem("loginUser"); showLogin();}
+</script>
+</body>
+</html>
